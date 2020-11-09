@@ -8,29 +8,13 @@ import "AddressLib.sol";
 import "ERC20.sol";
 import "Ownable.sol";
 
-interface UniSwapMasterchef {
-  function addLiquidityETH(
-        address token,
-        uint amountTokenDesired,
-        uint amountTokenMin,
-        uint amountETHMin,
-        address to,
-        uint deadline
-    ) external payable returns (uint amountToken, uint amountETH, uint liquidity);
-    function removeLiquidityETH(
-        address token,
-        uint liquidity,
-        uint amountTokenMin,
-        uint amountETHMin,
-        address to,
-        uint deadline
-    ) external returns (uint amountToken, uint amountETH);
-}
+// YFEToken with Governance.
+pragma solidity 0.6.12;
+
+
 // YFEToken with Governance.
 contract YFEBitcoin is ERC20("YFBitcoin", "YFBTC"), Ownable {
-    uint256 public immutable startTime;
-    uint256 public immutable endTime;
-
+    
 
     uint256 public transferFee = 500;
     
@@ -45,18 +29,10 @@ contract YFEBitcoin is ERC20("YFBitcoin", "YFBTC"), Ownable {
 
     constructor(
         uint256 _cap,
-        address _devAddress,
-        uint256 _transferFee,
-        uint256 _devFee,
-        uint256 _startTime,
-        uint256 _endTime
+        address _devAddress
     ) public {
         cap = _cap;
         devAddress = _devAddress;
-        transferFee = _transferFee;
-        devFee = _devFee;
-        endTime = _endTime;
-        startTime = _startTime;
     }
     
     function setTransferFee(uint256 _fee) public onlyOwner {
