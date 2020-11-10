@@ -321,17 +321,6 @@ contract YFEBitcoin is ERC20("YFBitcoin", "YFBTC"), Ownable {
     }
 
     /**
-     * @dev update the cap.
-     *
-     * Requirements:
-     *
-     * - Should only be called by the owner(Governace)
-     */
-    function updateCap(uint256 _cap) external onlyOwner {
-        cap = _cap;
-    }
-
-    /**
      * @dev See {ERC20-_beforeTokenTransfer}.
      *
      * Requirements:
