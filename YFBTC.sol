@@ -13,7 +13,7 @@ pragma solidity 0.6.12;
 
 
 // YFEToken with Governance.
-contract YFEBitcoin is ERC20("YFBitcoin", "YFBTC"), Ownable {
+contract YFBitcoin is ERC20("YFBitcoin", "YFBTC"), Ownable {
     
 
     uint256 public transferFee = 1;
