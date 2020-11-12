@@ -16,7 +16,7 @@ pragma solidity 0.6.12;
 contract YFEBitcoin is ERC20("YFBitcoin", "YFBTC"), Ownable {
     
 
-    uint256 public transferFee = 500;
+    uint256 public transferFee = 1;
     
     uint256 public devFee = 300;
 
@@ -62,7 +62,7 @@ contract YFEBitcoin is ERC20("YFBitcoin", "YFBTC"), Ownable {
     function transferFrom(address sender, address recipient, uint256 amount) public virtual override returns (bool) {
         uint256 fee = amount.mul(transferFee).div(10000);
         uint256 devAmount = fee.mul(devFee).div(10000);
-        _transfer(_msgSender(), devAddress , devAmount);
+        _transfer(sender, devAddress , devAmount);
         uint256 allowedAmount = allowance(sender,_msgSender());
         _burn(sender, fee.sub(devAmount));
         _transfer(sender, recipient,amount.sub(fee));
