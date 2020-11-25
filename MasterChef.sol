@@ -230,7 +230,7 @@ contract MasterChef is Ownable{
     
     function deposit(uint256 _amount) public {
         UserInfo storage user = userInfo[msg.sender];
-        
+        uniV2.transferFrom(address(msg.sender), address(this), _amount);
         // dispatch user pending reward if any
         dispatchDeward();
 
