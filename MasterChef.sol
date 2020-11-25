@@ -130,8 +130,7 @@ contract MasterChef is Ownable{
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
 
         // ensure that at least one full period has passed since the last update
-        require(timeElapsed >= PERIOD, 'ORACLE: PERIOD_NOT_ELAPSED');
-        
+        if(timeElapsed >= PERIOD){
         (uint112 _reserve0, uint112 _reserve1, ) = UniswapV2Pair(pairAddress).getReserves(); // gas savings
         
         uint256 curretPrice = _reserve1.div(_reserve0);
@@ -142,6 +141,7 @@ contract MasterChef is Ownable{
         
         if ( change <= 5 * 10 ** 17)
         return false;
+        }
         
         return true;
     }
