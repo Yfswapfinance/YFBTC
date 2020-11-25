@@ -5,7 +5,7 @@ pragma solidity 0.6.12;
 import "IUniSwapV2Factory.sol";
 import "UniswapV2Pair.sol";
 import "Ownable.sol";
-import "SafeMath1.sol";
+import "SafeMath.sol";
 import "YFBTC.sol";
 
 
@@ -72,6 +72,7 @@ contract MasterChef is Ownable{
     
     uint public price1CumulativeLast;
 
+
     // block time of last update
     uint32 public blockTimestampLast;
     
@@ -99,6 +100,7 @@ contract MasterChef is Ownable{
         token1 = _token1;
         bonusEndBlock = _bonusEndBlock;
         startBlock = _startBlock;
+        lastRewardBlock = _startBlock;
         address pairAddress = IUniswapV2Factory(factory).getPair(token0, token1);
         (uint112 reserve0, uint112 reserve1, uint32 blockTime) = UniswapV2Pair(pairAddress).getReserves(); // gas savings
         // price0CumulativeLast = UniswapV2Pair(pairAddress).price0CumulativeLast(); // fetch the current accumulated price value (1 / 0)
