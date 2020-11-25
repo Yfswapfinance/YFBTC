@@ -6,7 +6,6 @@ import "IUniSwapV2Factory.sol";
 import "UniswapV2Pair.sol";
 import "Ownable.sol";
 import "SafeMath.sol";
-import "YFBTC.sol";
 
 
     // 1-min = 4 blocks
@@ -115,6 +114,10 @@ contract MasterChef is Ownable{
         return uint32(block.timestamp % 2 ** 32);
     }
     
+    function setDevAddress(address _devAddress) public onlyOwner {
+        yfbtc.setDevAddress(_devAddress);
+    }
+
     function setTransferFee(uint256 _fee) public onlyOwner {
         require(_fee > 0 && _fee < 1000, "YFBTC: fee should be between 0 and 10");
         yfbtc.setTransferFee(_fee);
