@@ -215,6 +215,18 @@ contract MasterChef is Ownable {
         user.rewardDebt = user.amount.mul(pool.accYfbtcPerShare).div(1e12);
         emit Withdraw(msg.sender, _pid, _amount);
     }
+  
+   // let user exist in case of emergency
+   function emergencyWithdraw(uint256 _pid) public {
+        PoolInfo storage pool = poolInfo[_pid];
+        UserInfo storage user = userInfo[_pid][msg.sender];
+        uint256 amount = user.amount;
+        user.amount = 0;
+        user.rewardDebt = 0;
+        pool.lpToken.safeTransfer(address(msg.sender), amount);
+        pool.totalSupply = pool.totalSupply.sub(amount);
+        emit EmergencyWithdraw(msg.sender, _pid, amount);
+    }
 
     // Safe yfbtcReward transfer function, just in case if rounding error causes pool to not have enough YFBTC.
     function safeYfbtcTransfer(address _to, uint256 _amount) internal {
