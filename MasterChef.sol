@@ -142,6 +142,21 @@ contract MasterChef is Ownable {
         return user.amount.mul(accYfbtcPerShare).div(1e12).sub(user.rewardDebt);
     }
 
+    // View function to see rewardPer YFBTC block  on frontend.
+    function rewardPerBlock(uint256 _pid) external view returns (uint256) {
+        PoolInfo storage pool = poolInfo[_pid];
+        uint256 accYfbtcPerShare = pool.accYfbtcPerShare;
+        uint256 lpSupply = pool.lpToken.balanceOf(address(this));
+        if (block.number > pool.lastRewardBlock && lpSupply != 0) {
+            uint256 yfbtcReward = getMultiplier(pool.lastRewardBlock, block.number);
+            uint totalPoolsEligible = getEligiblePools();
+            uint256 rewardPerPool = yfbtcReward.div(totalPoolsEligible);
+            accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(1e12).div(lpSupply));
+        }
+        return accYfbtcPerShare;
+    }
+
+
     function getEligiblePools() internal view returns(uint){
         uint totalPoolsEligible = 0;
         uint256 length = poolInfo.length;
