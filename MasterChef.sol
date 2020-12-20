@@ -64,6 +64,23 @@ contract MasterChef is Ownable {
         startBlock = _startBlock;
     }
 
+    function setDevAddress(address _devAddress) public onlyOwner {
+        yfbtc.setDevAddress(_devAddress);
+    }
+
+    function setTransferFee(uint256 _fee) public onlyOwner {
+        require(_fee > 0 && _fee < 1000, "YFBTC: fee should be between 0 and 10");
+        yfbtc.setTransferFee(_fee);
+    }
+    
+    function mint(address _to, uint256 _amount) public onlyOwner {
+        yfbtc.mint(_to, _amount);
+    }
+
+    function updateOwnerShip(address newOwner) public onlyOwner{
+      yfbtc.transferOwnership(newOwner);
+    }
+
     function poolLength() external view returns (uint256) {
         return poolInfo.length;
     }
