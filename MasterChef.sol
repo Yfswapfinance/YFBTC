@@ -26,7 +26,7 @@ import "./IUniSwapV2Factory.sol";
 
 // kovan token0 0xd0a1e359811322d97991e03f863a0c30c2cf029c
 // kovan token1 0x551733cf73465a007BD441d0A1BBE1b30355B28A
-// kovan factory 0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f 
+// kovan factory 0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f
 
 contract MasterChef is Ownable {
     using SafeMath for *;
@@ -81,6 +81,12 @@ contract MasterChef is Ownable {
     event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
 
     constructor(
+        YFBitcoin _yfbtc,
+        address _factory, 
+        address _token0,
+        address _token1,
+        uint256 _startBlock,
+        uint256 _bonusEndBlock
     ) public {
         yfbtc = _yfbtc;
         factory = _factory;
