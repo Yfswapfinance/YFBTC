@@ -9,7 +9,8 @@ import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./YFBitcoin.sol";
-
+import "./UniswapV2Pair.sol";
+import "./IUniSwapV2Factory.sol";
 
 // MasterChef is the master of YFBTC. He can make YFBTC and he is a fair guy.
 //
@@ -18,8 +19,17 @@ import "./YFBitcoin.sol";
 // distributed and the community can show to govern itself.
 //
 // Have fun reading it. Hopefully it's bug-free. God bless.
+
+// live net token0 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
+// livenet factory 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f
+
+
+// kovan token0 0xd0a1e359811322d97991e03f863a0c30c2cf029c
+// kovan token1 0x551733cf73465a007BD441d0A1BBE1b30355B28A
+// kovan factory 0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f 
+
 contract MasterChef is Ownable {
-    using SafeMath for uint256;
+    using SafeMath for *;
     using SafeERC20 for IERC20;
 
     // Info of each user.
@@ -35,6 +45,22 @@ contract MasterChef is Ownable {
         uint256 accYfbtcPerShare; // Accumulated YFBTC per share, times 1e12. See below.
         uint256 totalSupply;
     }
+
+    uint256 public lastPrice = 0;
+
+    uint public constant PERIOD = 24 hours;
+    
+    // holds the WETH address
+    address public  token0;
+
+    // holds the YFBTC address
+    address public  token1;
+
+    // hold factory address that will be used to fetch pair address
+    address public  factory;
+
+    // block time of last update
+    uint32 public blockTimestampLast;
 
     // The YFBTC TOKEN!
     YFBitcoin public yfbtc;
@@ -55,13 +81,22 @@ contract MasterChef is Ownable {
     event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
 
     constructor(
-        YFBitcoin _yfbtc,
-        uint256 _startBlock,
-        uint256 _bonusEndBlock
     ) public {
         yfbtc = _yfbtc;
+        factory = _factory;
+        token0 = _token0;
+        token1 = _token1;
         bonusEndBlock = _bonusEndBlock;
         startBlock = _startBlock;
+        address pairAddress = IUniswapV2Factory(factory).getPair(token0, token1);
+        (uint112 reserve0, uint112 reserve1, uint32 blockTime) = UniswapV2Pair(pairAddress).getReserves(); // gas savings
+        blockTimestampLast = blockTime;
+        lastPrice = reserve1.mul(1e18).div(reserve0);
+        require(reserve0 != 0 && reserve1 != 0, 'ORACLE: NO_RESERVES'); // ensure that there's liquidity in the pair
+    }
+
+    function currentBlockTimestamp() internal view returns (uint32) {
+        return uint32(block.timestamp % 2 ** 32);
     }
 
     function setDevAddress(address _devAddress) public onlyOwner {
@@ -75,6 +110,33 @@ contract MasterChef is Ownable {
     
     function mint(address _to, uint256 _amount) public onlyOwner {
         yfbtc.mint(_to, _amount);
+    }
+
+    function update() public returns(bool) {
+        
+        uint32 blockTimestamp = currentBlockTimestamp();
+        address pairAddress = IUniswapV2Factory(factory).getPair(token0, token1);
+
+        uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
+
+        // ensure that at least one full period has passed since the last update
+        if(timeElapsed >= PERIOD){
+        (uint112 _reserve0, uint112 _reserve1, ) = UniswapV2Pair(pairAddress).getReserves(); // gas savings
+        
+        uint256 curretPrice = _reserve1.mul(1e18).div(_reserve0);
+
+        if ( curretPrice < lastPrice){
+        uint256 change = lastPrice.sub(curretPrice).mul(100).div(lastPrice);
+        lastPrice = curretPrice;
+        blockTimestampLast = blockTimestamp;
+
+        if ( change >= 5 )
+        return false;
+
+        }
+        }
+        
+        return true;
     }
 
     function updateOwnerShip(address newOwner) public onlyOwner{
@@ -198,6 +260,9 @@ contract MasterChef is Ownable {
             pool.lastRewardBlock = block.number;
             return;
         }
+        bool doMint = update();
+
+         if ( doMint ){
         uint256 yfbtcReward = getMultiplier(pool.lastRewardBlock, block.number);
         if ( yfbtcReward <= 0 ){
           return;
@@ -207,6 +272,7 @@ contract MasterChef is Ownable {
         uint256 rewardPerPool = yfbtcReward.div(totalPoolsEligible);
         pool.accYfbtcPerShare = pool.accYfbtcPerShare.add(rewardPerPool.mul(1e12).div(lpSupply));
         pool.lastRewardBlock = block.number;
+        }
     }
 
     // Deposit LP tokens to MasterChef for YFBTC allocation.
