@@ -26,7 +26,7 @@ import "./IUniSwapV2Factory.sol";
 
 // kovan token0 0xd0a1e359811322d97991e03f863a0c30c2cf029c
 // kovan token1 0x551733cf73465a007BD441d0A1BBE1b30355B28A
-// kovan factory 0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f
+// kovan factory 0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f 
 
 contract MasterChef is Ownable {
     using SafeMath for *;
@@ -41,7 +41,7 @@ contract MasterChef is Ownable {
     // Info of each pool.
     struct PoolInfo {
         IERC20 lpToken;           // Address of LP token contract.
-        uint256 lastRewardBlock;  // Last block number that YFBTC distribution occurs.
+        //EDIT - Per Pool last block reward is removed
         uint256 accYfbtcPerShare; // Accumulated YFBTC per share, times 1e12. See below.
         uint256 totalSupply;
     }
@@ -49,6 +49,8 @@ contract MasterChef is Ownable {
     uint256 public lastPrice = 0;
 
     uint public constant PERIOD = 24 hours;
+
+    uint constant yfbtcMultiplier = 5;
     
     // holds the WETH address
     address public  token0;
@@ -76,23 +78,30 @@ contract MasterChef is Ownable {
     // The block number when YFBTC mining starts.
     uint256 public startBlock;
 
+    // hold the block number of last rewarded block
+    uint256 lastRewardBlock = 0;
+
+    //EDIT adding uni-v2 address as variable
+    address univ2;
+
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
+    event Invoked(address indexed sender, address indexed target, uint indexed value, bytes data);
 
     constructor(
         YFBitcoin _yfbtc,
-        address _factory, 
+        address _univ2,
+        address _factory,
         address _token0,
         address _token1,
-        uint256 _startBlock,
-        uint256 _bonusEndBlock
+        uint256 _startBlock
     ) public {
         yfbtc = _yfbtc;
+        univ2 = _univ2;
         factory = _factory;
         token0 = _token0;
         token1 = _token1;
-        bonusEndBlock = _bonusEndBlock;
         startBlock = _startBlock;
         address pairAddress = IUniswapV2Factory(factory).getPair(token0, token1);
         (uint112 reserve0, uint112 reserve1, uint32 blockTime) = UniswapV2Pair(pairAddress).getReserves(); // gas savings
@@ -127,19 +136,17 @@ contract MasterChef is Ownable {
 
         // ensure that at least one full period has passed since the last update
         if(timeElapsed >= PERIOD){
-        (uint112 _reserve0, uint112 _reserve1, ) = UniswapV2Pair(pairAddress).getReserves(); // gas savings
-        
-        uint256 curretPrice = _reserve1.mul(1e18).div(_reserve0);
+            (uint112 _reserve0, uint112 _reserve1, ) = UniswapV2Pair(pairAddress).getReserves(); // gas savings
+            
+            uint256 curretPrice = _reserve1.mul(1e18).div(_reserve0);
 
-        if ( curretPrice < lastPrice){
-        uint256 change = lastPrice.sub(curretPrice).mul(100).div(lastPrice);
-        lastPrice = curretPrice;
-        blockTimestampLast = blockTimestamp;
-
-        if ( change >= 5 )
-        return false;
-
-        }
+            if ( curretPrice < lastPrice){
+                uint256 change = lastPrice.sub(curretPrice).mul(100).div(lastPrice);
+                lastPrice = curretPrice;
+                blockTimestampLast = blockTimestamp;
+                if ( change >= 5 )
+                    return false;
+            }
         }
         
         return true;
@@ -156,10 +163,10 @@ contract MasterChef is Ownable {
     // Add a new lp to the pool. Can only be called by the owner.
     // XXX DO NOT add the same LP token more than once. Rewards will be messed up if you do.
     function add(IERC20 _lpToken) public onlyOwner {
-        uint256 lastRewardBlock = block.number > startBlock ? block.number : startBlock;
+        //EDIT commenting lastRewardBlock per pool (it is now common for all pools)
+        //uint256 lastRewardBlock = block.number > startBlock ? block.number : startBlock;
         poolInfo.push(PoolInfo({
             lpToken: _lpToken,
-            lastRewardBlock: lastRewardBlock,
             accYfbtcPerShare: 0,
             totalSupply: 0
         }));
@@ -168,7 +175,7 @@ contract MasterChef is Ownable {
     // Return reward multiplier over the given _from to _to block.
     function getMultiplier(uint256 _from, uint256 _to) public view returns (uint256) {
          uint256 difference = _to.sub(_from);
-        if ( difference <=0 ){
+        if ( difference <= 0 ){
             difference = 1;
         }
         if (_from >= startBlock && _to <= startBlock.add(1036800)){
@@ -218,11 +225,18 @@ contract MasterChef is Ownable {
         UserInfo storage user = userInfo[_pid][_user];
         uint256 accYfbtcPerShare = pool.accYfbtcPerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
-        if (block.number > pool.lastRewardBlock && lpSupply != 0) {
-            uint256 yfbtcReward = getMultiplier(pool.lastRewardBlock, block.number);
+        if (block.number > lastRewardBlock && lpSupply != 0) {
+            uint256 yfbtcReward = getMultiplier(lastRewardBlock, block.number);
             uint totalPoolsEligible = getEligiblePools();
-            uint256 rewardPerPool = yfbtcReward.div(totalPoolsEligible);
-            accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(1e12).div(lpSupply));
+            
+            uint distribution = yfbtcMultiplier + totalPoolsEligible - 1;
+            uint256 rewardPerPool = yfbtcReward.div(distribution);
+        
+            if (address(pool.lpToken) == univ2){
+              accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(yfbtcMultiplier).mul(1e12).div(lpSupply));
+            }else{
+              accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(1e12).div(lpSupply));
+            }
         }
         return user.amount.mul(accYfbtcPerShare).div(1e12).sub(user.rewardDebt);
     }
@@ -232,11 +246,19 @@ contract MasterChef is Ownable {
         PoolInfo storage pool = poolInfo[_pid];
         uint256 accYfbtcPerShare = pool.accYfbtcPerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
-        if (block.number > pool.lastRewardBlock && lpSupply != 0) {
-            uint256 yfbtcReward = getMultiplier(pool.lastRewardBlock, block.number);
+        if (block.number > lastRewardBlock && lpSupply != 0) {
+
+            uint256 yfbtcReward = getMultiplier(lastRewardBlock, block.number);
             uint totalPoolsEligible = getEligiblePools();
-            uint256 rewardPerPool = yfbtcReward.div(totalPoolsEligible);
-            accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(1e12).div(lpSupply));
+
+            uint distribution = yfbtcMultiplier + totalPoolsEligible - 1;
+            uint256 rewardPerPool = yfbtcReward.div(distribution);
+        
+            if (address(pool.lpToken) == univ2){
+              accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(yfbtcMultiplier).mul(1e12).div(lpSupply));
+            }else{
+              accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(1e12).div(lpSupply));
+            }
         }
         return accYfbtcPerShare;
     }
@@ -258,26 +280,36 @@ contract MasterChef is Ownable {
     // Update reward variables of the given pool to be up-to-date.
     function updatePool(uint256 _pid) public {
         PoolInfo storage pool = poolInfo[_pid];
-        if (block.number <= pool.lastRewardBlock) {
+        if (block.number <= lastRewardBlock) {
             return;
         }
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (lpSupply == 0) {
-            pool.lastRewardBlock = block.number;
+            lastRewardBlock = block.number;
             return;
         }
         bool doMint = update();
 
-         if ( doMint ){
-        uint256 yfbtcReward = getMultiplier(pool.lastRewardBlock, block.number);
-        if ( yfbtcReward <= 0 ){
-          return;
-        }
-        yfbtc.mint(address(this), yfbtcReward);
-        uint totalPoolsEligible = getEligiblePools();
-        uint256 rewardPerPool = yfbtcReward.div(totalPoolsEligible);
-        pool.accYfbtcPerShare = pool.accYfbtcPerShare.add(rewardPerPool.mul(1e12).div(lpSupply));
-        pool.lastRewardBlock = block.number;
+        if ( doMint ){
+            uint256 yfbtcReward = getMultiplier(lastRewardBlock, block.number);
+            if ( yfbtcReward <= 0 )
+                return;
+            uint totalPoolsEligible = getEligiblePools();
+
+            if ( totalPoolsEligible == 0 )
+                return;
+            yfbtc.mint(address(this), yfbtcReward);
+
+            uint distribution = yfbtcMultiplier + totalPoolsEligible - 1;
+            uint256 rewardPerPool = yfbtcReward.div(distribution);
+            
+            if (address(pool.lpToken) == univ2){
+                pool.accYfbtcPerShare = pool.accYfbtcPerShare.add(rewardPerPool.mul(yfbtcMultiplier).mul(1e12).div(lpSupply));
+            }else{
+                pool.accYfbtcPerShare = pool.accYfbtcPerShare.add(rewardPerPool.mul(1e12).div(lpSupply));
+            }
+            
+            lastRewardBlock = block.number;
         }
     }
 
@@ -319,7 +351,7 @@ contract MasterChef is Ownable {
         user.rewardDebt = user.amount.mul(pool.accYfbtcPerShare).div(1e12);
         emit Withdraw(msg.sender, _pid, _amount);
     }
-  
+
    // let user exist in case of emergency
    function emergencyWithdraw(uint256 _pid) public {
         PoolInfo storage pool = poolInfo[_pid];
@@ -340,5 +372,39 @@ contract MasterChef is Ownable {
         } else {
             yfbtc.transfer(_to, _amount);
         }
+    }
+
+        /**
+     * @dev Performs a generic transaction.
+     * @param _target The address for the transaction.
+     * @param _value The value of the transaction.
+     * @param _data The data of the transaction.
+     * @return the result data of the forwarded call.
+     */
+    function invoke(
+        address _target,
+        uint _value,
+        bytes calldata _data
+    )
+        external
+        onlyOwner
+        returns (bytes memory)
+    {
+        return _invoke(_target, _value, _data);
+    }
+
+    function _invoke(
+        address _target,
+        uint _value,
+        bytes memory _data
+    )
+        private
+        returns (bytes memory)
+    {
+        // solium-disable-next-line security/no-call-value
+        (bool success, bytes memory result) = _target.call.value(_value)(_data);
+        require(success, "MC: call to target failed");
+        emit Invoked(msg.sender, _target, _value, _data);
+        return result;
     }
 }
