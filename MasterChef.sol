@@ -28,7 +28,7 @@ import "./IUniSwapV2Factory.sol";
 // kovan token1 0x551733cf73465a007BD441d0A1BBE1b30355B28A
 // kovan factory 0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f 
 
-contract MasterChef is Ownable {
+contract YFBTCMaster is Ownable {
     using SafeMath for *;
     using SafeERC20 for IERC20;
 
