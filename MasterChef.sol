@@ -82,7 +82,7 @@ contract YFBTCMaster is Ownable {
     uint256 lastRewardBlock = 0;
 
     //EDIT adding uni-v2 address as variable
-    address univ2;
+    address yfbtcPoolAddress;
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
@@ -91,14 +91,14 @@ contract YFBTCMaster is Ownable {
 
     constructor(
         YFBitcoin _yfbtc,
-        address _univ2,
+        address _yfbtcPoolAddress,
         address _factory,
         address _token0,
         address _token1,
         uint256 _startBlock
     ) public {
         yfbtc = _yfbtc;
-        univ2 = _univ2;
+        yfbtcPoolAddress = _yfbtcPoolAddress;
         factory = _factory;
         token0 = _token0;
         token1 = _token1;
@@ -123,9 +123,6 @@ contract YFBTCMaster is Ownable {
         yfbtc.setTransferFee(_fee);
     }
     
-    function mint(address _to, uint256 _amount) public onlyOwner {
-        yfbtc.mint(_to, _amount);
-    }
 
     function update() public returns(bool) {
         
@@ -150,10 +147,6 @@ contract YFBTCMaster is Ownable {
         }
         
         return true;
-    }
-
-    function updateOwnerShip(address newOwner) public onlyOwner{
-      yfbtc.transferOwnership(newOwner);
     }
 
     function poolLength() external view returns (uint256) {
@@ -232,7 +225,7 @@ contract YFBTCMaster is Ownable {
             uint distribution = yfbtcMultiplier + totalPoolsEligible - 1;
             uint256 rewardPerPool = yfbtcReward.div(distribution);
         
-            if (address(pool.lpToken) == univ2){
+            if (address(pool.lpToken) == yfbtcPoolAddress){
               accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(yfbtcMultiplier).mul(1e12).div(lpSupply));
             }else{
               accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(1e12).div(lpSupply));
@@ -254,7 +247,7 @@ contract YFBTCMaster is Ownable {
             uint distribution = yfbtcMultiplier + totalPoolsEligible - 1;
             uint256 rewardPerPool = yfbtcReward.div(distribution);
         
-            if (address(pool.lpToken) == univ2){
+            if (address(pool.lpToken) == yfbtcPoolAddress){
               accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(yfbtcMultiplier).mul(1e12).div(lpSupply));
             }else{
               accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(1e12).div(lpSupply));
@@ -303,7 +296,7 @@ contract YFBTCMaster is Ownable {
             uint distribution = yfbtcMultiplier + totalPoolsEligible - 1;
             uint256 rewardPerPool = yfbtcReward.div(distribution);
             
-            if (address(pool.lpToken) == univ2){
+            if (address(pool.lpToken) == yfbtcPoolAddress){
                 pool.accYfbtcPerShare = pool.accYfbtcPerShare.add(rewardPerPool.mul(yfbtcMultiplier).mul(1e12).div(lpSupply));
             }else{
                 pool.accYfbtcPerShare = pool.accYfbtcPerShare.add(rewardPerPool.mul(1e12).div(lpSupply));
@@ -353,7 +346,7 @@ contract YFBTCMaster is Ownable {
     }
 
    // let user exist in case of emergency
-   function emergencyWithdraw(uint256 _pid) public {
+   function emergencyWithdraw(uint256 _pid) external {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         uint256 amount = user.amount;
