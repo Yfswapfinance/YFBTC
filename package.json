@@ -1,0 +1,29 @@
+{
+  "name": "@sushiswap/core",
+  "version": "1.4.1",
+  "license": "MIT",
+  "description": "🎛 Core contracts for the SushiSwap protocol",
+  "files": [
+    "contracts",
+    "build"
+  ],
+  "repository": "https://github.com/sushiswap/sushiswap",
+  "keywords": [
+    "uniswap",
+    "sushiswap",
+    "ethereum"
+  ],
+  "scripts": {
+    "compile": "truffle compile",
+    "prepublishOnly": "yarn run compile && node scripts/prepublish.js"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^3.1.0",
+    "@openzeppelin/test-helpers": "^0.5.6",
+    "dotenv": "^8.2.0",
+    "truffle": "^5.1.55",
+    "truffle-flattener": "^1.4.4",
+    "truffle-hdwallet-provider-privkey": "^0.3.0",
+    "truffle-plugin-verify": "^0.5.4"
+  }
+}

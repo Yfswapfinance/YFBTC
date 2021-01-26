@@ -1,0 +1,5 @@
+/node_modules/
+/build/
+/migrations/
+/.env
+.env
