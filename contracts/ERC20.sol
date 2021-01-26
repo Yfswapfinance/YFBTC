@@ -1,9 +1,10 @@
 pragma solidity ^0.6.0;
 
-import "Context.sol";
-import "IERC20.sol";
-import "SafeMath.sol";
-import "AddressLib.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/EnumerableSet.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 contract ERC20 is Context, IERC20 {
     using SafeMath for uint256;
     using Address for address;

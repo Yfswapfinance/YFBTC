@@ -1,15 +1,14 @@
 
 pragma solidity 0.6.12;
 
-import "Context.sol";
-import "IERC20.sol";
-import "SafeMath.sol";
-import "AddressLib.sol";
-import "ERC20.sol";
-import "Ownable.sol";
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/EnumerableSet.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "./ERC20.sol";
 // YFEToken with Governance.
-pragma solidity 0.6.12;
 
 
 // YFEToken with Governance.

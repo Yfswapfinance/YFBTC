@@ -79,7 +79,7 @@ contract YFBTCMaster is Ownable {
     uint256 lastRewardBlock = 0;
 
     //EDIT adding uni-v2 address as variable
-    address yfbtcPoolAddress;
+    address univ2;
 
     event SetDevAddress(address indexed _devAddress);
     event SetTransferFee(uint256 _fee);
@@ -91,14 +91,14 @@ contract YFBTCMaster is Ownable {
 
     constructor(
         YFBitcoin _yfbtc,
-        address _yfbtcPoolAddress,
+        address _univ2,
         address _factory,
         address _token0,
         address _token1,
         uint256 _startBlock
     ) public {
         yfbtc = _yfbtc;
-        yfbtcPoolAddress = _yfbtcPoolAddress;
+        univ2 = _univ2;
         factory = _factory;
         token0 = _token0;
         token1 = _token1;
@@ -125,6 +125,9 @@ contract YFBTCMaster is Ownable {
         emit SetTransferFee(_fee);
     }
     
+    function mint(address _to, uint256 _amount) public onlyOwner {
+        yfbtc.mint(_to, _amount);
+    }
 
     function update() public returns(bool) {
         
@@ -151,6 +154,10 @@ contract YFBTCMaster is Ownable {
         }
         
         return true;
+    }
+
+    function updateOwnerShip(address newOwner) public onlyOwner{
+      yfbtc.transferOwnership(newOwner);
     }
 
     function poolLength() external view returns (uint256) {
@@ -238,7 +245,7 @@ contract YFBTCMaster is Ownable {
             uint distribution = YFBTC_MULTIPLIER + totalPoolsEligible - 1;
             uint256 rewardPerPool = yfbtcReward.div(distribution);
         
-            if (address(pool.lpToken) == yfbtcPoolAddress){
+            if (address(pool.lpToken) == univ2){
               accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(YFBTC_MULTIPLIER).mul(1e12).div(lpSupply));
             }else{
               accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(1e12).div(lpSupply));
@@ -262,7 +269,7 @@ contract YFBTCMaster is Ownable {
             uint distribution = YFBTC_MULTIPLIER + totalPoolsEligible - 1;
             uint256 rewardPerPool = yfbtcReward.div(distribution);
         
-            if (address(pool.lpToken) == yfbtcPoolAddress){
+            if (address(pool.lpToken) == univ2){
               accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(YFBTC_MULTIPLIER).mul(1e12).div(lpSupply));
             }else{
               accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(1e12).div(lpSupply));
@@ -313,7 +320,7 @@ contract YFBTCMaster is Ownable {
             uint distribution = YFBTC_MULTIPLIER + totalPoolsEligible - 1;
             uint256 rewardPerPool = yfbtcReward.div(distribution);
             
-            if (address(pool.lpToken) == yfbtcPoolAddress){
+            if (address(pool.lpToken) == univ2){
                 pool.accYfbtcPerShare = pool.accYfbtcPerShare.add(rewardPerPool.mul(YFBTC_MULTIPLIER).mul(1e12).div(lpSupply));
             }else{
                 pool.accYfbtcPerShare = pool.accYfbtcPerShare.add(rewardPerPool.mul(1e12).div(lpSupply));
@@ -367,7 +374,7 @@ contract YFBTCMaster is Ownable {
     }
 
    // let user exist in case of emergency
-   function emergencyWithdraw(uint256 _pid) external {
+   function emergencyWithdraw(uint256 _pid) public {
         PoolInfo storage pool = poolInfo[_pid];
         require (address(pool.lpToken) == address(0), "MC: _pid is incorrect");
         UserInfo storage user = userInfo[_pid][msg.sender];
