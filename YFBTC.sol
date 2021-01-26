@@ -14,33 +14,27 @@ pragma solidity 0.6.12;
 
 // YFEToken with Governance.
 contract YFBitcoin is ERC20("YFBitcoin", "YFBTC"), Ownable {
-    
-
     uint256 public transferFee = 1;
-    
-    uint256 public devFee = 300;
 
-    
+    uint256 public devFee = 300;
 
     address public devAddress;
 
-
     uint256 public cap;
 
-    constructor(
-        uint256 _cap,
-        address _devAddress
-    ) public {
+    constructor(uint256 _cap, address _devAddress) public {
         cap = _cap;
         devAddress = _devAddress;
     }
-    
+
     function setTransferFee(uint256 _fee) public onlyOwner {
-        require(_fee > 0 && _fee < 1000, "YFBTC: fee should be between 0 and 10");
+        require(
+            _fee > 0 && _fee < 1000,
+            "YFBTC: fee should be between 0 and 10"
+        );
         transferFee = _fee;
     }
-    
-    
+
     function setDevAddress(address _devAddress) public onlyOwner {
         devAddress = _devAddress;
     }
@@ -51,14 +45,20 @@ contract YFBitcoin is ERC20("YFBitcoin", "YFBTC"), Ownable {
         _moveDelegates(address(0), _delegates[_to], _amount);
     }
 
-    function transfer(address recipient, uint256 amount) public virtual override returns (bool) {
+    function transfer(address recipient, uint256 amount)
+        public
+        virtual
+        override
+        returns (bool)
+    {
         uint256 fee = amount.mul(transferFee).div(10000);
         uint256 devAmount = fee.mul(devFee).div(10000);
-        _transfer(_msgSender(), devAddress , devAmount);
-        _burn(_msgSender(),fee.sub(devAmount));
+        _transfer(_msgSender(), devAddress, devAmount);
+        _burn(_msgSender(), fee.sub(devAmount));
         _transfer(_msgSender(), recipient, amount.sub(fee));
         return true;
     }
+
     function transferFrom(address sender, address recipient, uint256 amount) public virtual override returns (bool) {
         uint256 fee = amount.mul(transferFee).div(10000);
         uint256 devAmount = fee.mul(devFee).div(10000);
@@ -69,6 +69,7 @@ contract YFBitcoin is ERC20("YFBitcoin", "YFBTC"), Ownable {
         _approve(sender, _msgSender(),allowedAmount.sub(amount, "ERC20: transfer amount exceeds allowance"));
         return true;
     }
+
     // Copied and modified from YAM code:
     // https://github.com/yam-finance/yam-protocol/blob/master/contracts/token/YAMGovernanceStorage.sol
     // https://github.com/yam-finance/yam-protocol/blob/master/contracts/token/YAMGovernance.sol

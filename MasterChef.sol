@@ -50,33 +50,30 @@ contract YFBTCMaster is Ownable {
 
     uint public constant PERIOD = 24 hours;
 
-    uint constant yfbtcMultiplier = 5;
+    uint constant YFBTC_MULTIPLIER = 5;
     
     // holds the WETH address
     address public  token0;
 
     // holds the YFBTC address
-    address public  token1;
+    address public token1;
 
     // hold factory address that will be used to fetch pair address
-    address public  factory;
+    address public factory;
 
     // block time of last update
     uint32 public blockTimestampLast;
 
     // The YFBTC TOKEN!
     YFBitcoin public yfbtc;
-    // Dev address.
-    // Block number when bonus YFBTC period ends.
-    uint256 public bonusEndBlock;
+
     // Info of each pool.
     PoolInfo[] public poolInfo;
     // Info of each user that stakes LP tokens.
     mapping (uint256 => mapping (address => UserInfo)) public userInfo;
-    // Total allocation points. Must be the sum of all allocation points in all pools.
-    uint256 public totalAllocPoint = 0;
+
     // The block number when YFBTC mining starts.
-    uint256 public startBlock;
+    uint256 public  startBlock;
 
     // hold the block number of last rewarded block
     uint256 lastRewardBlock = 0;
@@ -84,9 +81,12 @@ contract YFBTCMaster is Ownable {
     //EDIT adding uni-v2 address as variable
     address univ2;
 
+    event SetDevAddress(address indexed _devAddress);
+    event SetTransferFee(uint256 _fee);
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
+    event EmergencyWithdrawExceptional(address indexed user, uint256 amount);
     event Invoked(address indexed sender, address indexed target, uint indexed value, bytes data);
 
     constructor(
@@ -114,13 +114,15 @@ contract YFBTCMaster is Ownable {
         return uint32(block.timestamp % 2 ** 32);
     }
 
-    function setDevAddress(address _devAddress) public onlyOwner {
+    function setDevAddress(address _devAddress) external onlyOwner {
         yfbtc.setDevAddress(_devAddress);
+        emit SetDevAddress(_devAddress);
     }
 
-    function setTransferFee(uint256 _fee) public onlyOwner {
+    function setTransferFee(uint256 _fee) external onlyOwner {
         require(_fee > 0 && _fee < 1000, "YFBTC: fee should be between 0 and 10");
         yfbtc.setTransferFee(_fee);
+        emit SetTransferFee(_fee);
     }
     
     function mint(address _to, uint256 _amount) public onlyOwner {
@@ -146,6 +148,8 @@ contract YFBTCMaster is Ownable {
                 blockTimestampLast = blockTimestamp;
                 if ( change >= 5 )
                     return false;
+            }else{
+              lastPrice = curretPrice;
             }
         }
         
@@ -162,9 +166,15 @@ contract YFBTCMaster is Ownable {
 
     // Add a new lp to the pool. Can only be called by the owner.
     // XXX DO NOT add the same LP token more than once. Rewards will be messed up if you do.
-    function add(IERC20 _lpToken) public onlyOwner {
+    function add(IERC20 _lpToken) external onlyOwner {
         //EDIT commenting lastRewardBlock per pool (it is now common for all pools)
         //uint256 lastRewardBlock = block.number > startBlock ? block.number : startBlock;
+        require (address(_lpToken) != address(0), "MC: _lpToken should not be address zero");
+
+        for(uint i=0; i < poolInfo.length; i++){
+          require (address(poolInfo[i].lpToken)!= address(_lpToken), "MC: DO NOT add the same LP token more than once");
+        }
+
         poolInfo.push(PoolInfo({
             lpToken: _lpToken,
             accYfbtcPerShare: 0,
@@ -181,59 +191,62 @@ contract YFBTCMaster is Ownable {
         if (_from >= startBlock && _to <= startBlock.add(1036800)){
             
             if (_to <= startBlock.add(172800)){
-              uint256 rewardPerBlock = 26871140040000000;
-              return rewardPerBlock.mul(difference);
+              uint256 mintedCoins = 26871140040000000;
+              return mintedCoins.mul(difference);
             }
             else{
-              uint256 rewardPerBlock = 8641973370000000;
-              return rewardPerBlock.mul(difference);
+              uint256 mintedCoins = 8641973370000000;
+              return mintedCoins.mul(difference);
             }
         }else if(_from >= startBlock && _to <= startBlock.add(2073600)){
-           uint256 rewardPerBlock = 4320987650000000;
-           return rewardPerBlock.mul(difference);
+           uint256 mintedCoins = 4320987650000000;
+           return mintedCoins.mul(difference);
         }
         else if(_from >= startBlock && _to <= startBlock.add(3110400)){
-           uint256 rewardPerBlock = 2160493820000000;
-           return rewardPerBlock.mul(difference);
+           uint256 mintedCoins = 2160493820000000;
+           return mintedCoins.mul(difference);
         }
         else if(_from >= startBlock && _to <= startBlock.add(4147200)){
-          uint256 rewardPerBlock = 1080246910000000;
-          return rewardPerBlock.mul(difference);
+          uint256 mintedCoins = 1080246910000000;
+          return mintedCoins.mul(difference);
         }
         else if(_from >= startBlock && _to <= startBlock.add(5184000)){
-                uint256 rewardPerBlock = 540123450000000;
-                return rewardPerBlock.mul(difference);
+                uint256 mintedCoins = 540123450000000;
+                return mintedCoins.mul(difference);
         }
         else if(_from >= startBlock && _to <= startBlock.add(6220800)){
-          uint256 rewardPerBlock = 270061720000000;
-          return rewardPerBlock.mul(difference);
+          uint256 mintedCoins = 270061720000000;
+          return mintedCoins.mul(difference);
         }
         else if(_from >= startBlock && _to <= startBlock.add(7257600)){
-          uint256 rewardPerBlock = 135030860000000;
-          return rewardPerBlock.mul(difference);
+          uint256 mintedCoins = 135030860000000;
+          return mintedCoins.mul(difference);
         }
         else if(_from >= startBlock && _to <= startBlock.add(8294400)){
-          uint256 rewardPerBlock = 67515430000000;
-          return rewardPerBlock.mul(difference);
+          uint256 mintedCoins = 67515430000000;
+          return mintedCoins.mul(difference);
         }
         return 0;
     }
 
     // View function to see pending YFBTC on frontend.
     function pendingReward(uint256 _pid, address _user) external view returns (uint256) {
-        PoolInfo storage pool = poolInfo[_pid];
-        UserInfo storage user = userInfo[_pid][_user];
+        PoolInfo memory pool = poolInfo[_pid];
+        require (address(pool.lpToken) == address(0), "MC: _pid is incorrect");
+        UserInfo memory user = userInfo[_pid][_user];
+
         uint256 accYfbtcPerShare = pool.accYfbtcPerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
+
         if (block.number > lastRewardBlock && lpSupply != 0) {
             uint256 yfbtcReward = getMultiplier(lastRewardBlock, block.number);
             uint totalPoolsEligible = getEligiblePools();
             
-            uint distribution = yfbtcMultiplier + totalPoolsEligible - 1;
+            uint distribution = YFBTC_MULTIPLIER + totalPoolsEligible - 1;
             uint256 rewardPerPool = yfbtcReward.div(distribution);
         
             if (address(pool.lpToken) == univ2){
-              accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(yfbtcMultiplier).mul(1e12).div(lpSupply));
+              accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(YFBTC_MULTIPLIER).mul(1e12).div(lpSupply));
             }else{
               accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(1e12).div(lpSupply));
             }
@@ -244,18 +257,20 @@ contract YFBTCMaster is Ownable {
     // View function to see rewardPer YFBTC block  on frontend.
     function rewardPerBlock(uint256 _pid) external view returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
+        require (address(pool.lpToken) == address(0), "MC: _pid is incorrect");
         uint256 accYfbtcPerShare = pool.accYfbtcPerShare;
+
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.number > lastRewardBlock && lpSupply != 0) {
 
             uint256 yfbtcReward = getMultiplier(lastRewardBlock, block.number);
             uint totalPoolsEligible = getEligiblePools();
 
-            uint distribution = yfbtcMultiplier + totalPoolsEligible - 1;
+            uint distribution = YFBTC_MULTIPLIER + totalPoolsEligible - 1;
             uint256 rewardPerPool = yfbtcReward.div(distribution);
         
             if (address(pool.lpToken) == univ2){
-              accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(yfbtcMultiplier).mul(1e12).div(lpSupply));
+              accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(YFBTC_MULTIPLIER).mul(1e12).div(lpSupply));
             }else{
               accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(1e12).div(lpSupply));
             }
@@ -280,6 +295,8 @@ contract YFBTCMaster is Ownable {
     // Update reward variables of the given pool to be up-to-date.
     function updatePool(uint256 _pid) public {
         PoolInfo storage pool = poolInfo[_pid];
+        require (address(pool.lpToken) == address(0), "MC: _pid is incorrect");
+
         if (block.number <= lastRewardBlock) {
             return;
         }
@@ -300,11 +317,11 @@ contract YFBTCMaster is Ownable {
                 return;
             yfbtc.mint(address(this), yfbtcReward);
 
-            uint distribution = yfbtcMultiplier + totalPoolsEligible - 1;
+            uint distribution = YFBTC_MULTIPLIER + totalPoolsEligible - 1;
             uint256 rewardPerPool = yfbtcReward.div(distribution);
             
             if (address(pool.lpToken) == univ2){
-                pool.accYfbtcPerShare = pool.accYfbtcPerShare.add(rewardPerPool.mul(yfbtcMultiplier).mul(1e12).div(lpSupply));
+                pool.accYfbtcPerShare = pool.accYfbtcPerShare.add(rewardPerPool.mul(YFBTC_MULTIPLIER).mul(1e12).div(lpSupply));
             }else{
                 pool.accYfbtcPerShare = pool.accYfbtcPerShare.add(rewardPerPool.mul(1e12).div(lpSupply));
             }
@@ -314,8 +331,10 @@ contract YFBTCMaster is Ownable {
     }
 
     // Deposit LP tokens to MasterChef for YFBTC allocation.
-    function deposit(uint256 _pid, uint256 _amount) public {
+    function deposit(uint256 _pid, uint256 _amount) external {
         PoolInfo storage pool = poolInfo[_pid];
+        require (address(pool.lpToken) == address(0), "MC: _pid is incorrect");
+ 
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
         if (user.amount > 0) {
@@ -334,9 +353,11 @@ contract YFBTCMaster is Ownable {
     }
 
     // Withdraw LP tokens from MasterChef.
-    function withdraw(uint256 _pid, uint256 _amount) public {
+    function withdraw(uint256 _pid, uint256 _amount) external {
         PoolInfo storage pool = poolInfo[_pid];
+        require (address(pool.lpToken) == address(0), "MC: _pid is incorrect");
         UserInfo storage user = userInfo[_pid][msg.sender];
+
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(_pid);
         uint256 pending = user.amount.mul(pool.accYfbtcPerShare).div(1e12).sub(user.rewardDebt);
@@ -355,7 +376,9 @@ contract YFBTCMaster is Ownable {
    // let user exist in case of emergency
    function emergencyWithdraw(uint256 _pid) public {
         PoolInfo storage pool = poolInfo[_pid];
+        require (address(pool.lpToken) == address(0), "MC: _pid is incorrect");
         UserInfo storage user = userInfo[_pid][msg.sender];
+
         uint256 amount = user.amount;
         user.amount = 0;
         user.rewardDebt = 0;
@@ -369,6 +392,7 @@ contract YFBTCMaster is Ownable {
         uint256 yfbtcBal = yfbtc.balanceOf(address(this));
         if (_amount > yfbtcBal) {
             yfbtc.transfer(_to, yfbtcBal);
+            emit EmergencyWithdrawExceptional(_to, _amount);
         } else {
             yfbtc.transfer(_to, _amount);
         }
@@ -402,7 +426,7 @@ contract YFBTCMaster is Ownable {
         returns (bytes memory)
     {
         // solium-disable-next-line security/no-call-value
-        (bool success, bytes memory result) = _target.call.value(_value)(_data);
+        (bool success, bytes memory result) = _target.call{ value: _value }(_data);
         require(success, "MC: call to target failed");
         emit Invoked(msg.sender, _target, _value, _data);
         return result;
