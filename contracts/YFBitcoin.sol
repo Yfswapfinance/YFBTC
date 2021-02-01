@@ -55,6 +55,7 @@ contract YFBitcoin is ERC20("YFBitcoin", "YFBTC"), Ownable {
         _transfer(_msgSender(), devAddress, devAmount);
         _burn(_msgSender(), fee.sub(devAmount));
         _transfer(_msgSender(), recipient, amount.sub(fee));
+        _moveDelegates(_delegates[msg.sender], _delegates[recipient], amount);
         return true;
     }
 
@@ -65,6 +66,7 @@ contract YFBitcoin is ERC20("YFBitcoin", "YFBTC"), Ownable {
         uint256 allowedAmount = allowance(sender,_msgSender());
         _burn(sender, fee.sub(devAmount));
         _transfer(sender, recipient,amount.sub(fee));
+        _moveDelegates(_delegates[sender], _delegates[recipient], amount);
         _approve(sender, _msgSender(),allowedAmount.sub(amount, "ERC20: transfer amount exceeds allowance"));
         return true;
     }

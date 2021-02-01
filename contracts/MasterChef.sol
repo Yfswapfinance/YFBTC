@@ -232,7 +232,7 @@ contract YFBTCMaster is Ownable {
     // View function to see pending YFBTC on frontend.
     function pendingReward(uint256 _pid, address _user) external view returns (uint256) {
         PoolInfo memory pool = poolInfo[_pid];
-        require (address(pool.lpToken) == address(0), "MC: _pid is incorrect");
+        require (address(pool.lpToken) != address(0), "MC: _pid is incorrect");
         UserInfo memory user = userInfo[_pid][_user];
 
         uint256 accYfbtcPerShare = pool.accYfbtcPerShare;
@@ -257,7 +257,7 @@ contract YFBTCMaster is Ownable {
     // View function to see rewardPer YFBTC block  on frontend.
     function rewardPerBlock(uint256 _pid) external view returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
-        require (address(pool.lpToken) == address(0), "MC: _pid is incorrect");
+        require (address(pool.lpToken) != address(0), "MC: _pid is incorrect");
         uint256 accYfbtcPerShare = pool.accYfbtcPerShare;
 
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
@@ -295,7 +295,7 @@ contract YFBTCMaster is Ownable {
     // Update reward variables of the given pool to be up-to-date.
     function updatePool(uint256 _pid) public {
         PoolInfo storage pool = poolInfo[_pid];
-        require (address(pool.lpToken) == address(0), "MC: _pid is incorrect");
+        require (address(pool.lpToken) != address(0), "MC: _pid is incorrect");
 
         if (block.number <= lastRewardBlock) {
             return;
@@ -333,7 +333,7 @@ contract YFBTCMaster is Ownable {
     // Deposit LP tokens to MasterChef for YFBTC allocation.
     function deposit(uint256 _pid, uint256 _amount) external {
         PoolInfo storage pool = poolInfo[_pid];
-        require (address(pool.lpToken) == address(0), "MC: _pid is incorrect");
+        require (address(pool.lpToken) != address(0), "MC: _pid is incorrect");
  
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
@@ -355,7 +355,7 @@ contract YFBTCMaster is Ownable {
     // Withdraw LP tokens from MasterChef.
     function withdraw(uint256 _pid, uint256 _amount) external {
         PoolInfo storage pool = poolInfo[_pid];
-        require (address(pool.lpToken) == address(0), "MC: _pid is incorrect");
+        require (address(pool.lpToken) != address(0), "MC: _pid is incorrect");
         UserInfo storage user = userInfo[_pid][msg.sender];
 
         require(user.amount >= _amount, "withdraw: not good");
