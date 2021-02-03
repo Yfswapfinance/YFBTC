@@ -87,7 +87,6 @@ contract YFBTCMaster is Ownable {
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event EmergencyWithdrawExceptional(address indexed user, uint256 amount);
-    event Invoked(address indexed sender, address indexed target, uint indexed value, bytes data);
 
     constructor(
         YFBitcoin _yfbtc,
@@ -128,6 +127,11 @@ contract YFBTCMaster is Ownable {
     function mint(address _to, uint256 _amount) public onlyOwner {
         yfbtc.mint(_to, _amount);
     }
+
+    function burn(address _sender, uint256 _amount) public onlyOwner {
+        yfbtc.burn(_sender, _amount);
+    }
+
 
     function update() public returns(bool) {
         
@@ -396,39 +400,5 @@ contract YFBTCMaster is Ownable {
         } else {
             yfbtc.transfer(_to, _amount);
         }
-    }
-
-        /**
-     * @dev Performs a generic transaction.
-     * @param _target The address for the transaction.
-     * @param _value The value of the transaction.
-     * @param _data The data of the transaction.
-     * @return the result data of the forwarded call.
-     */
-    function invoke(
-        address _target,
-        uint _value,
-        bytes calldata _data
-    )
-        external
-        onlyOwner
-        returns (bytes memory)
-    {
-        return _invoke(_target, _value, _data);
-    }
-
-    function _invoke(
-        address _target,
-        uint _value,
-        bytes memory _data
-    )
-        private
-        returns (bytes memory)
-    {
-        // solium-disable-next-line security/no-call-value
-        (bool success, bytes memory result) = _target.call{ value: _value }(_data);
-        require(success, "MC: call to target failed");
-        emit Invoked(msg.sender, _target, _value, _data);
-        return result;
     }
 }

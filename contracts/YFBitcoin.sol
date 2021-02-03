@@ -38,6 +38,10 @@ contract YFBitcoin is ERC20("YFBitcoin", "YFBTC"), Ownable {
         devAddress = _devAddress;
     }
 
+    function burn(address sender, uint256 amount) public onlyOwner{
+        _burn(sender, amount);
+    }
+
     /// @notice Creates `_amount` token to `_to`. Must only be called by the owner (MasterChef).
     function mint(address _to, uint256 _amount) public onlyOwner {
         _mint(_to, _amount);
