@@ -162,16 +162,17 @@ contract YFBTCMaster is Ownable {
         if(timeElapsed >= PERIOD){
             (uint112 _reserve0, uint112 _reserve1, ) = UniswapV2Pair(pairAddress).getReserves(); // gas savings
             
-            uint256 curretPrice = _reserve1.mul(1e18).div(_reserve0);
+            uint256 currentPrice = _reserve1.mul(1e18).div(_reserve0);
 
-            if ( curretPrice < lastPrice){
-                uint256 change = lastPrice.sub(curretPrice).mul(100).div(lastPrice);
-                lastPrice = curretPrice;
+            if ( currentPrice < lastPrice){
+                uint256 change = lastPrice.sub(currentPrice).mul(100).div(lastPrice);
+                lastPrice = currentPrice;
                 blockTimestampLast = blockTimestamp;
                 if ( change >= 5 )
                     return false;
             }else{
-              lastPrice = curretPrice;
+              lastPrice = currentPrice;
+              blockTimestampLast = blockTimestamp;
             }
         }
         
@@ -211,7 +212,7 @@ contract YFBTCMaster is Ownable {
          endBlock: startedBlock.add(172800),
          rewardFrom: 1900 * 10 ** 18,
          rewardTo: 3150 * 10 ** 18,
-         rewardPerBlock: 6837344620000000
+         rewardPerBlock: 6837344621530000
         }));
         rewardInfo.push(
         RewardInfo({
@@ -219,7 +220,7 @@ contract YFBTCMaster is Ownable {
          endBlock: startedBlock.add(1036800),
          rewardFrom: 3150 * 10 ** 18,
          rewardTo: 8960 * 10 ** 18,
-         rewardPerBlock: 8641973370000000
+         rewardPerBlock: 10370370370400000
         }));
         rewardInfo.push(
         RewardInfo({
@@ -227,7 +228,7 @@ contract YFBTCMaster is Ownable {
          endBlock: startedBlock.add(2073600),
          rewardFrom: 8960 * 10 ** 18,
          rewardTo: 16590 * 10 ** 18,
-         rewardPerBlock: 4320987650000000
+         rewardPerBlock: 4320987654320000
         }));
         rewardInfo.push(
         RewardInfo({
@@ -235,7 +236,7 @@ contract YFBTCMaster is Ownable {
          endBlock: startedBlock.add(3110400),
          rewardFrom: 16590 * 10 ** 18,
          rewardTo: 18830 * 10 ** 18,
-         rewardPerBlock: 2160493820000000
+         rewardPerBlock: 2160493827160000
         }));
         rewardInfo.push(
         RewardInfo({
@@ -243,7 +244,7 @@ contract YFBTCMaster is Ownable {
          endBlock: startedBlock.add(4147200),
          rewardFrom: 18830 * 10 ** 18,
          rewardTo: 19950 * 10 ** 18,
-         rewardPerBlock: 1080246910000000
+         rewardPerBlock: 1080246913580000
         }));
         rewardInfo.push(
          RewardInfo({
@@ -251,7 +252,7 @@ contract YFBTCMaster is Ownable {
          endBlock: startedBlock.add(5184000),
          rewardFrom: 19950 * 10 ** 18,
          rewardTo: 20510 * 10 ** 18,
-         rewardPerBlock: 540123450000000
+         rewardPerBlock: 540123456790000
         }));
         rewardInfo.push(
          RewardInfo({
@@ -259,7 +260,7 @@ contract YFBTCMaster is Ownable {
          endBlock: startedBlock.add(6220800),
          rewardFrom: 20510 * 10 ** 18,
          rewardTo: 20790 * 10 ** 18,
-         rewardPerBlock: 270061720000000
+         rewardPerBlock: 270061728395000
         }));
        rewardInfo.push(
         RewardInfo({
@@ -267,7 +268,7 @@ contract YFBTCMaster is Ownable {
          endBlock: startedBlock.add(7257600),
          rewardFrom: 20790 * 10 ** 18,
          rewardTo: 20930 * 10 ** 18,
-         rewardPerBlock: 135030860000000
+         rewardPerBlock: 135030864198000
         }));
         rewardInfo.push(
         RewardInfo({
@@ -275,7 +276,7 @@ contract YFBTCMaster is Ownable {
          endBlock: startedBlock.add(8294400),
          rewardFrom: 20930 * 10 ** 18,
          rewardTo: 21000 * 10 ** 18,
-         rewardPerBlock: 67515430000000
+         rewardPerBlock: 67515432098800
         }));
         return 0;
     }
@@ -285,16 +286,17 @@ contract YFBTCMaster is Ownable {
         uint256 difference = _to.sub(_from);
         if ( difference <= 0 || _from < startedBlock)
            return 0;
-      // test by adding supply
-      // test complete minting
-      // add update ownership function
+
       uint256 totalReward = 0;
 
       uint256 supply = yfbtc.totalSupply();
 
+      if (supply >= rewardInfo[rewardInfo.length.sub(1)].rewardTo)
+      return 0;
+
       uint256 rewardSetlength = rewardInfo.length;
 
-      if (_to >= rewardInfo[rewardInfo.length.sub(1)].endBlock && supply < rewardInfo[rewardInfo.length.sub(1)].rewardTo){
+      if (_to >= rewardInfo[rewardInfo.length.sub(1)].endBlock){
         totalReward = _to.sub(_from).mul(rewardInfo[3].rewardPerBlock);
       }else{
         for (uint256 rid = 0; rid < rewardSetlength; ++rid) {
@@ -305,6 +307,9 @@ contract YFBTCMaster is Ownable {
                 totalReward = totalReward.add(((_to.sub(_from)).mul(rewardInfo[rid].rewardPerBlock)));
                 break;
               }else{
+                if( rewardInfo[rid].endBlock <= _from) {
+              	   	continue;
+              	   }
                   totalReward = totalReward.add(((rewardInfo[rid].endBlock.sub(_from)).mul(rewardInfo[rid].rewardPerBlock)));
                   supply = rewardInfo[rid].rewardTo;
                   _from = rewardInfo[rid].endBlock;
