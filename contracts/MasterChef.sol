@@ -295,7 +295,7 @@ contract YFBTCMaster is Ownable {
       uint256 rewardSetlength = rewardInfo.length;
 
       if (_to >= rewardInfo[rewardInfo.length.sub(1)].endBlock && supply < rewardInfo[rewardInfo.length.sub(1)].rewardTo){
-        totalReward = _to.sub(_from).mul(rewardInfo[2].rewardPerBlock);
+        totalReward = _to.sub(_from).mul(rewardInfo[3].rewardPerBlock);
       }else{
         for (uint256 rid = 0; rid < rewardSetlength; ++rid) {
 
