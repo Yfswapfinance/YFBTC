@@ -46,6 +46,15 @@ contract YFBTCMaster is Ownable {
         uint256 totalSupply;
     }
 
+
+    struct RewardInfo{
+      uint256 startBlock;
+      uint256 endBlock;
+      uint256 rewardFrom;
+      uint256 rewardTo;
+      uint256 rewardPerBlock;
+    }
+
     uint256 public lastPrice = 0;
 
     uint public constant PERIOD = 24 hours;
@@ -69,11 +78,19 @@ contract YFBTCMaster is Ownable {
 
     // Info of each pool.
     PoolInfo[] public poolInfo;
+
+    //info of reward pools
+
+    RewardInfo[] public rewardInfo;
+
+
+
+
     // Info of each user that stakes LP tokens.
     mapping (uint256 => mapping (address => UserInfo)) public userInfo;
 
     // The block number when YFBTC mining starts.
-    uint256 public  startBlock;
+    uint256 public  startedBlock;
 
     // hold the block number of last rewarded block
     uint256 lastRewardBlock = 0;
@@ -94,19 +111,20 @@ contract YFBTCMaster is Ownable {
         address _factory,
         address _token0,
         address _token1,
-        uint256 _startBlock
+        uint256 _startedBlock
     ) public {
         yfbtc = _yfbtc;
         univ2 = _univ2;
         factory = _factory;
         token0 = _token0;
         token1 = _token1;
-        startBlock = _startBlock;
+        startedBlock = _startedBlock;
         address pairAddress = IUniswapV2Factory(factory).getPair(token0, token1);
         (uint112 reserve0, uint112 reserve1, uint32 blockTime) = UniswapV2Pair(pairAddress).getReserves(); // gas savings
         blockTimestampLast = blockTime;
         lastPrice = reserve1.mul(1e18).div(reserve0);
         require(reserve0 != 0 && reserve1 != 0, 'ORACLE: NO_RESERVES'); // ensure that there's liquidity in the pair
+        addRewardSet();
     }
 
     function currentBlockTimestamp() internal view returns (uint32) {
@@ -186,51 +204,115 @@ contract YFBTCMaster is Ownable {
         }));
     }
 
+    function addRewardSet() internal returns (uint){
+       rewardInfo.push(
+       RewardInfo({
+         startBlock : startedBlock,
+         endBlock: startedBlock.add(172800),
+         rewardFrom: 1900 * 10 ** 18,
+         rewardTo: 3150 * 10 ** 18,
+         rewardPerBlock: 6837344620000000
+        }));
+        rewardInfo.push(
+        RewardInfo({
+         startBlock : startedBlock.add(172800),
+         endBlock: startedBlock.add(1036800),
+         rewardFrom: 3150 * 10 ** 18,
+         rewardTo: 8960 * 10 ** 18,
+         rewardPerBlock: 8641973370000000
+        }));
+        rewardInfo.push(
+        RewardInfo({
+         startBlock : startedBlock.add(1036800),
+         endBlock: startedBlock.add(2073600),
+         rewardFrom: 8960 * 10 ** 18,
+         rewardTo: 16590 * 10 ** 18,
+         rewardPerBlock: 4320987650000000
+        }));
+        rewardInfo.push(
+        RewardInfo({
+         startBlock : startedBlock.add(2073600),
+         endBlock: startedBlock.add(3110400),
+         rewardFrom: 16590 * 10 ** 18,
+         rewardTo: 18830 * 10 ** 18,
+         rewardPerBlock: 2160493820000000
+        }));
+        rewardInfo.push(
+        RewardInfo({
+         startBlock : startedBlock.add(3110400),
+         endBlock: startedBlock.add(4147200),
+         rewardFrom: 18830 * 10 ** 18,
+         rewardTo: 19950 * 10 ** 18,
+         rewardPerBlock: 1080246910000000
+        }));
+        rewardInfo.push(
+         RewardInfo({
+         startBlock : startedBlock.add(4147200),
+         endBlock: startedBlock.add(5184000),
+         rewardFrom: 19950 * 10 ** 18,
+         rewardTo: 20510 * 10 ** 18,
+         rewardPerBlock: 540123450000000
+        }));
+        rewardInfo.push(
+         RewardInfo({
+         startBlock : startedBlock.add(5184000),
+         endBlock: startedBlock.add(6220800),
+         rewardFrom: 20510 * 10 ** 18,
+         rewardTo: 20790 * 10 ** 18,
+         rewardPerBlock: 270061720000000
+        }));
+       rewardInfo.push(
+        RewardInfo({
+         startBlock : startedBlock.add(6220800),
+         endBlock: startedBlock.add(7257600),
+         rewardFrom: 20790 * 10 ** 18,
+         rewardTo: 20930 * 10 ** 18,
+         rewardPerBlock: 135030860000000
+        }));
+        rewardInfo.push(
+        RewardInfo({
+         startBlock : startedBlock.add(7257600),
+         endBlock: startedBlock.add(8294400),
+         rewardFrom: 20930 * 10 ** 18,
+         rewardTo: 21000 * 10 ** 18,
+         rewardPerBlock: 67515430000000
+        }));
+        return 0;
+    }
     // Return reward multiplier over the given _from to _to block.
     function getMultiplier(uint256 _from, uint256 _to) public view returns (uint256) {
-         uint256 difference = _to.sub(_from);
-        if ( difference <= 0 ){
-            difference = 1;
+
+        uint256 difference = _to.sub(_from);
+        if ( difference <= 0 || _from < startedBlock)
+           return 0;
+      // test by adding supply
+      // test complete minting
+      // add update ownership function
+      uint256 totalReward = 0;
+
+      uint256 supply = yfbtc.totalSupply();
+
+      uint256 rewardSetlength = rewardInfo.length;
+
+      if (_to >= rewardInfo[rewardInfo.length.sub(1)].endBlock && supply < rewardInfo[rewardInfo.length.sub(1)].rewardTo){
+        totalReward = _to.sub(_from).mul(rewardInfo[2].rewardPerBlock);
+      }else{
+        for (uint256 rid = 0; rid < rewardSetlength; ++rid) {
+
+          if ( supply >= rewardInfo[rid].rewardFrom){
+              
+              if(_to <= rewardInfo[rid].endBlock){
+                totalReward = totalReward.add(((_to.sub(_from)).mul(rewardInfo[rid].rewardPerBlock)));
+                break;
+              }else{
+                  totalReward = totalReward.add(((rewardInfo[rid].endBlock.sub(_from)).mul(rewardInfo[rid].rewardPerBlock)));
+                  supply = rewardInfo[rid].rewardTo;
+                  _from = rewardInfo[rid].endBlock;
+              }
+          }
         }
-        if (_from >= startBlock && _to <= startBlock.add(1036800)){
-            
-            if (_to <= startBlock.add(172800)){
-              uint256 mintedCoins = 26871140040000000;
-              return mintedCoins.mul(difference);
-            }
-            else{
-              uint256 mintedCoins = 8641973370000000;
-              return mintedCoins.mul(difference);
-            }
-        }else if(_from >= startBlock && _to <= startBlock.add(2073600)){
-           uint256 mintedCoins = 4320987650000000;
-           return mintedCoins.mul(difference);
-        }
-        else if(_from >= startBlock && _to <= startBlock.add(3110400)){
-           uint256 mintedCoins = 2160493820000000;
-           return mintedCoins.mul(difference);
-        }
-        else if(_from >= startBlock && _to <= startBlock.add(4147200)){
-          uint256 mintedCoins = 1080246910000000;
-          return mintedCoins.mul(difference);
-        }
-        else if(_from >= startBlock && _to <= startBlock.add(5184000)){
-                uint256 mintedCoins = 540123450000000;
-                return mintedCoins.mul(difference);
-        }
-        else if(_from >= startBlock && _to <= startBlock.add(6220800)){
-          uint256 mintedCoins = 270061720000000;
-          return mintedCoins.mul(difference);
-        }
-        else if(_from >= startBlock && _to <= startBlock.add(7257600)){
-          uint256 mintedCoins = 135030860000000;
-          return mintedCoins.mul(difference);
-        }
-        else if(_from >= startBlock && _to <= startBlock.add(8294400)){
-          uint256 mintedCoins = 67515430000000;
-          return mintedCoins.mul(difference);
-        }
-        return 0;
+      }
+      return totalReward;
     }
 
     // View function to see pending YFBTC on frontend.
@@ -331,6 +413,7 @@ contract YFBTCMaster is Ownable {
             }
             
             lastRewardBlock = block.number;
+            // TODO update stage
         }
     }
 
