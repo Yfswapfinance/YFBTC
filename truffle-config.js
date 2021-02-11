@@ -18,7 +18,7 @@ module.exports = {
     },
     mainnet: {
       provider: () => new HDWalletProvider([process.env.PRIVATE_KEY], `https://mainnet.infura.io/v3/a4273886253a4c01b2e41cbfeb190ccd`),
-      network_id: 42,       // Ropsten's id
+      network_id: 1,       // Ropsten's id
     }
   },
   plugins: [
