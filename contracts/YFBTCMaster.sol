@@ -41,7 +41,7 @@ contract YFBTCMaster is Ownable {
     // Info of each pool.
     struct PoolInfo {
         IERC20 lpToken;           // Address of LP token contract.
-        //EDIT - Per Pool last block reward is removed
+        uint256 lastRewardBlock;
         uint256 accYfbtcPerShare; // Accumulated YFBTC per share, times 1e12. See below.
         uint256 totalSupply;
     }
@@ -59,7 +59,7 @@ contract YFBTCMaster is Ownable {
 
     uint public constant PERIOD = 24 hours;
 
-    uint constant YFBTC_MULTIPLIER = 5;
+    uint constant GLOBAL_MULTIPLIER = 24;
     
     // holds the WETH address
     address public  token0;
@@ -163,13 +163,10 @@ contract YFBTCMaster is Ownable {
             (uint112 _reserve0, uint112 _reserve1, ) = UniswapV2Pair(pairAddress).getReserves(); // gas savings
             
             uint256 currentPrice = _reserve1.mul(1e18).div(_reserve0);
+            uint256 change = lastPrice.sub(currentPrice).mul(100).div(lastPrice);
 
-            if ( currentPrice < lastPrice){
-                uint256 change = lastPrice.sub(currentPrice).mul(100).div(lastPrice);
-                lastPrice = currentPrice;
-                blockTimestampLast = blockTimestamp;
-                if ( change >= 5 )
-                    return false;
+            if ( currentPrice < lastPrice && change >= 5){
+              return false;
             }else{
               lastPrice = currentPrice;
               blockTimestampLast = blockTimestamp;
@@ -201,6 +198,7 @@ contract YFBTCMaster is Ownable {
         poolInfo.push(PoolInfo({
             lpToken: _lpToken,
             accYfbtcPerShare: 0,
+            lastRewardBlock: block.number,
             totalSupply: 0
         }));
     }
@@ -280,6 +278,17 @@ contract YFBTCMaster is Ownable {
         }));
         return 0;
     }
+
+    function getPoolBaseMultiplier(uint256 _pid) public view returns (uint256) {
+      if (_pid == 0 ){
+        return 20;
+      }else if(_pid == 1 ){
+        return 4;
+      }else{
+        return 1;
+      }
+    }
+
     // Return reward multiplier over the given _from to _to block.
     function getMultiplier(uint256 _from, uint256 _to) public view returns (uint256) {
 
@@ -317,7 +326,14 @@ contract YFBTCMaster is Ownable {
           }
         }
       }
-      return totalReward;
+      uint totalPoolsEligible = getEligiblePools();
+
+      if ( totalPoolsEligible == 0 )
+      return 0;
+
+      uint256 rewardPerPool = totalReward.div(GLOBAL_MULTIPLIER);
+
+      return rewardPerPool;
     }
 
     // View function to see pending YFBTC on frontend.
@@ -330,14 +346,10 @@ contract YFBTCMaster is Ownable {
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
 
         if (block.number > lastRewardBlock && lpSupply != 0) {
-            uint256 yfbtcReward = getMultiplier(lastRewardBlock, block.number);
-            uint totalPoolsEligible = getEligiblePools();
+            uint256 rewardPerPool = getMultiplier(lastRewardBlock, block.number);
             
-            uint distribution = YFBTC_MULTIPLIER + totalPoolsEligible - 1;
-            uint256 rewardPerPool = yfbtcReward.div(distribution);
-        
             if (address(pool.lpToken) == univ2){
-              accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(YFBTC_MULTIPLIER).mul(1e12).div(lpSupply));
+              accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(getPoolBaseMultiplier(_pid)).mul(1e12).div(lpSupply));
             }else{
               accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(1e12).div(lpSupply));
             }
@@ -354,14 +366,10 @@ contract YFBTCMaster is Ownable {
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.number > lastRewardBlock && lpSupply != 0) {
 
-            uint256 yfbtcReward = getMultiplier(lastRewardBlock, block.number);
-            uint totalPoolsEligible = getEligiblePools();
+            uint256 rewardPerPool = getMultiplier(lastRewardBlock, block.number);
 
-            uint distribution = YFBTC_MULTIPLIER + totalPoolsEligible - 1;
-            uint256 rewardPerPool = yfbtcReward.div(distribution);
-        
             if (address(pool.lpToken) == univ2){
-              accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(YFBTC_MULTIPLIER).mul(1e12).div(lpSupply));
+              accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(getPoolBaseMultiplier(_pid)).mul(1e12).div(lpSupply));
             }else{
               accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(1e12).div(lpSupply));
             }
@@ -402,22 +410,21 @@ contract YFBTCMaster is Ownable {
             uint256 yfbtcReward = getMultiplier(lastRewardBlock, block.number);
             if ( yfbtcReward <= 0 )
                 return;
-            uint totalPoolsEligible = getEligiblePools();
+ 
+            // if (address(pool.lpToken) == univ2){
+                yfbtcReward = yfbtcReward.mul(getPoolBaseMultiplier(_pid));
+                pool.accYfbtcPerShare = pool.accYfbtcPerShare.add(yfbtcReward.mul(getPoolBaseMultiplier(_pid)).mul(1e12).div(lpSupply));
+            // }else{
+            //     pool.accYfbtcPerShare = pool.accYfbtcPerShare.add(yfbtcReward.mul(1e12).div(lpSupply));
+            // }
 
-            if ( totalPoolsEligible == 0 )
-                return;
-            yfbtc.mint(address(this), yfbtcReward);
+            yfbtc.mint(address(this), yfbtcReward);            
+            pool.lastRewardBlock = block.number;
 
-            uint distribution = YFBTC_MULTIPLIER + totalPoolsEligible - 1;
-            uint256 rewardPerPool = yfbtcReward.div(distribution);
-            
-            if (address(pool.lpToken) == univ2){
-                pool.accYfbtcPerShare = pool.accYfbtcPerShare.add(rewardPerPool.mul(YFBTC_MULTIPLIER).mul(1e12).div(lpSupply));
-            }else{
-                pool.accYfbtcPerShare = pool.accYfbtcPerShare.add(rewardPerPool.mul(1e12).div(lpSupply));
-            }
-            
-            lastRewardBlock = block.number;
+            // uint distribution = YFBTC_MULTIPLIER + totalPoolsEligible - 1;
+            // uint256 rewardPerPool = yfbtcReward.div(distribution);
+           
+            // lastRewardBlock = block.number;
             // TODO update stage
         }
     }
