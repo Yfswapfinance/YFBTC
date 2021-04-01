@@ -59,7 +59,7 @@ contract YFBTCMaster is Ownable {
 
     uint public constant PERIOD = 24 hours;
 
-    uint constant GLOBAL_MULTIPLIER = 24;
+    uint constant GLOBAL_MULTIPLIER = 26;
     
     // holds the WETH address
     address public  token0;
