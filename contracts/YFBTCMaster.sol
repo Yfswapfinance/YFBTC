@@ -92,9 +92,6 @@ contract YFBTCMaster is Ownable {
     // The block number when YFBTC mining starts.
     uint256 public  startedBlock;
 
-    // hold the block number of last rewarded block
-    uint256 lastRewardBlock = 0;
-
     //EDIT adding uni-v2 address as variable
     address univ2;
 
@@ -345,8 +342,8 @@ contract YFBTCMaster is Ownable {
         uint256 accYfbtcPerShare = pool.accYfbtcPerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
 
-        if (block.number > lastRewardBlock && lpSupply != 0) {
-            uint256 rewardPerPool = getMultiplier(lastRewardBlock, block.number);
+        if (block.number > pool.lastRewardBlock && lpSupply != 0) {
+            uint256 rewardPerPool = getMultiplier(pool.lastRewardBlock, block.number);
             
             if (address(pool.lpToken) == univ2){
               accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(getPoolBaseMultiplier(_pid)).mul(1e12).div(lpSupply));
@@ -364,9 +361,9 @@ contract YFBTCMaster is Ownable {
         uint256 accYfbtcPerShare = pool.accYfbtcPerShare;
 
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
-        if (block.number > lastRewardBlock && lpSupply != 0) {
+        if (block.number > pool.lastRewardBlock && lpSupply != 0) {
 
-            uint256 rewardPerPool = getMultiplier(lastRewardBlock, block.number);
+            uint256 rewardPerPool = getMultiplier(pool.lastRewardBlock, block.number);
 
             if (address(pool.lpToken) == univ2){
               accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(getPoolBaseMultiplier(_pid)).mul(1e12).div(lpSupply));
@@ -396,18 +393,18 @@ contract YFBTCMaster is Ownable {
         PoolInfo storage pool = poolInfo[_pid];
         require (address(pool.lpToken) != address(0), "MC: _pid is incorrect");
 
-        if (block.number <= lastRewardBlock) {
+        if (block.number <= pool.lastRewardBlock) {
             return;
         }
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (lpSupply == 0) {
-            lastRewardBlock = block.number;
+            pool.lastRewardBlock = block.number;
             return;
         }
         bool doMint = update();
 
         if ( doMint ){
-            uint256 yfbtcReward = getMultiplier(lastRewardBlock, block.number);
+            uint256 yfbtcReward = getMultiplier(pool.lastRewardBlock, block.number);
             if ( yfbtcReward <= 0 )
                 return;
  
