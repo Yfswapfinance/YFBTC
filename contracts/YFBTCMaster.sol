@@ -58,8 +58,6 @@ contract YFBTCMaster is Ownable {
     uint256 public lastPrice = 0;
 
     uint public constant PERIOD = 24 hours;
-
-    uint constant GLOBAL_MULTIPLIER = 26;
     
     // holds the WETH address
     address public  token0;
@@ -151,7 +149,7 @@ contract YFBTCMaster is Ownable {
     function update() public returns(bool) {
         
         uint32 blockTimestamp = currentBlockTimestamp();
-        address pairAddress = IUniswapV2Factory(factory).getPair(token0, token1);
+        address pairAddress = IUniswapV2Factory(factory).getPair(address(token0), address(token1));
 
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
 
@@ -323,12 +321,12 @@ contract YFBTCMaster is Ownable {
           }
         }
       }
-      uint totalPoolsEligible = getEligiblePools();
+      uint totalMultipliers = sumOfMultipliers();
 
-      if ( totalPoolsEligible == 0 )
+      if ( totalMultipliers == 0 )
       return 0;
 
-      uint256 rewardPerPool = totalReward.div(GLOBAL_MULTIPLIER);
+      uint256 rewardPerPool = totalReward.div(totalMultipliers);
 
       return rewardPerPool;
     }
@@ -344,12 +342,7 @@ contract YFBTCMaster is Ownable {
 
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 rewardPerPool = getMultiplier(pool.lastRewardBlock, block.number);
-            
-            if (address(pool.lpToken) == univ2){
-              accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(getPoolBaseMultiplier(_pid)).mul(1e12).div(lpSupply));
-            }else{
-              accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(1e12).div(lpSupply));
-            }
+            accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(getPoolBaseMultiplier(_pid)).mul(1e12).div(lpSupply));
         }
         return user.amount.mul(accYfbtcPerShare).div(1e12).sub(user.rewardDebt);
     }
@@ -362,30 +355,24 @@ contract YFBTCMaster is Ownable {
 
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
-
             uint256 rewardPerPool = getMultiplier(pool.lastRewardBlock, block.number);
-
-            if (address(pool.lpToken) == univ2){
-              accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(getPoolBaseMultiplier(_pid)).mul(1e12).div(lpSupply));
-            }else{
-              accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(1e12).div(lpSupply));
-            }
+            accYfbtcPerShare = accYfbtcPerShare.add(rewardPerPool.mul(getPoolBaseMultiplier(_pid)).mul(1e12).div(lpSupply));
         }
         return accYfbtcPerShare;
     }
 
 
-    function getEligiblePools() internal view returns(uint){
-        uint totalPoolsEligible = 0;
+    function sumOfMultipliers() internal view returns(uint){
+        uint eligibleMultipliers = 0;
         uint256 length = poolInfo.length;
 
         // Reward will only be assign to pools when they the staked balance is > 0  
         for (uint256 pid = 0; pid < length; ++pid) {
             if( poolInfo[pid].totalSupply > 0){
-              totalPoolsEligible = totalPoolsEligible.add(1);
+              eligibleMultipliers = eligibleMultipliers.add(getPoolBaseMultiplier(pid));
             }
         }
-        return totalPoolsEligible;
+        return eligibleMultipliers;
     }
 
     // Update reward variables of the given pool to be up-to-date.
@@ -410,7 +397,7 @@ contract YFBTCMaster is Ownable {
  
             // if (address(pool.lpToken) == univ2){
                 yfbtcReward = yfbtcReward.mul(getPoolBaseMultiplier(_pid));
-                pool.accYfbtcPerShare = pool.accYfbtcPerShare.add(yfbtcReward.mul(getPoolBaseMultiplier(_pid)).mul(1e12).div(lpSupply));
+                pool.accYfbtcPerShare = pool.accYfbtcPerShare.add(yfbtcReward.mul(1e12).div(lpSupply));
             // }else{
             //     pool.accYfbtcPerShare = pool.accYfbtcPerShare.add(yfbtcReward.mul(1e12).div(lpSupply));
             // }
