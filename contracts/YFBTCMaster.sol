@@ -9,7 +9,6 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./YFBitcoin.sol";
 import "./UniswapV2Pair.sol";
-import "./IUniSwapV2Factory.sol";
 
 contract YFBTCMaster is Ownable {
     using SafeMath for *;
@@ -41,14 +40,10 @@ contract YFBTCMaster is Ownable {
 
     uint256 public constant PERIOD = 24 hours;
 
-    // holds the WETH address
-    address public token0;
-
-    // holds the YFBTC address
-    address public token1;
+    uint256 public constant CHANGE_IN_PERCENTAGE = 5;
 
     // hold factory address that will be used to fetch pair address
-    address public factory;
+    address public pairAddress;
 
     // block time of last update
     uint32 public blockTimestampLast;
@@ -68,9 +63,6 @@ contract YFBTCMaster is Ownable {
     // The block number when YFBTC mining starts.
     uint256 public startedBlock;
 
-    //EDIT adding uni-v2 address as variable
-    address univ2;
-
     event SetDevAddress(address indexed _devAddress);
     event SetTransferFee(uint256 _fee);
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
@@ -84,24 +76,16 @@ contract YFBTCMaster is Ownable {
 
     constructor(
         YFBitcoin _yfbtc,
-        address _univ2,
-        address _factory,
-        address _token0,
-        address _token1,
+        address _pairAddress,
         uint256 _startedBlock
     ) public {
         yfbtc = _yfbtc;
-        univ2 = _univ2;
-        factory = _factory;
-        token0 = _token0;
-        token1 = _token1;
+        pairAddress = _pairAddress;
         startedBlock = _startedBlock;
-        address pairAddress =
-            IUniswapV2Factory(factory).getPair(token0, token1);
         (uint112 reserve0, uint112 reserve1, uint32 blockTime) =
             UniswapV2Pair(pairAddress).getReserves(); // gas savings
         blockTimestampLast = blockTime;
-        lastPrice = reserve1.mul(1e18).div(reserve0);
+        lastPrice = reserve1;
         require(reserve0 != 0 && reserve1 != 0, "ORACLE: NO_RESERVES"); // ensure that there's liquidity in the pair
         addRewardSet();
     }
@@ -135,24 +119,20 @@ contract YFBTCMaster is Ownable {
 
     function update() public returns (bool) {
         uint32 blockTimestamp = currentBlockTimestamp();
-        address pairAddress =
-            IUniswapV2Factory(factory).getPair(
-                address(token0),
-                address(token1)
-            );
-
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
 
         // ensure that at least one full period has passed since the last update
         if (timeElapsed >= PERIOD) {
-            (uint112 _reserve0, uint112 _reserve1, ) =
-                UniswapV2Pair(pairAddress).getReserves(); // gas savings
+            uint256 change = 0;
+            (, uint112 _reserve1, ) = UniswapV2Pair(pairAddress).getReserves(); // gas savings
 
-            uint256 currentPrice = _reserve1.mul(1e18).div(_reserve0);
-            uint256 change =
-                lastPrice.sub(currentPrice).mul(100).div(lastPrice);
+            uint256 currentPrice = _reserve1;
 
-            if (currentPrice < lastPrice && change >= 5) {
+            if (lastPrice > currentPrice) {
+                change = lastPrice.sub(currentPrice).mul(100).div(lastPrice);
+            }
+
+            if (change >= CHANGE_IN_PERCENTAGE) {
                 return false;
             } else {
                 lastPrice = currentPrice;
