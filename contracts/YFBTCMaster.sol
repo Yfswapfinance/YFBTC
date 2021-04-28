@@ -354,6 +354,29 @@ contract YFBTCMaster is Ownable {
         return user.amount.mul(accYfbtcPerShare).div(1e12).sub(user.rewardDebt);
     }
 
+    function estimateReward(
+        uint256 _pid,
+        address _user,
+        uint256 to
+    ) external view returns (uint256) {
+        PoolInfo memory pool = poolInfo[_pid];
+        require(address(pool.lpToken) != address(0), "MC: _pid is incorrect");
+        UserInfo memory user = userInfo[_pid][_user];
+
+        uint256 accYfbtcPerShare = pool.accYfbtcPerShare;
+        uint256 lpSupply = pool.lpToken.balanceOf(address(this));
+
+        if (block.number > pool.lastRewardBlock && lpSupply != 0) {
+            uint256 rewardPerPool = getMultiplier(pool.lastRewardBlock, to);
+            accYfbtcPerShare = accYfbtcPerShare.add(
+                rewardPerPool.mul(getPoolBaseMultiplier(_pid)).mul(1e12).div(
+                    lpSupply
+                )
+            );
+        }
+        return user.amount.mul(accYfbtcPerShare).div(1e12).sub(user.rewardDebt);
+    }
+
     function sumOfMultipliers() internal view returns (uint256) {
         uint256 eligibleMultipliers = 0;
         uint256 length = poolInfo.length;
