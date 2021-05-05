@@ -192,7 +192,7 @@ contract YFBTCMaster is Ownable {
         rewardInfo.push(
             RewardInfo({
                 startBlock: startedBlock.add(172800),
-                endBlock: startedBlock.add(1896000),
+                endBlock: startedBlock.add(1036800),
                 rewardFrom: 3150 * 10**18,
                 rewardTo: 8960 * 10**18,
                 rewardPerBlock: 8641975309000000
@@ -200,8 +200,8 @@ contract YFBTCMaster is Ownable {
         );
         rewardInfo.push(
             RewardInfo({
-                startBlock: startedBlock.add(1896000),
-                endBlock: startedBlock.add(2928000),
+                startBlock: startedBlock.add(1036800),
+                endBlock: startedBlock.add(2073600),
                 rewardFrom: 8960 * 10**18,
                 rewardTo: 16590 * 10**18,
                 rewardPerBlock: 4320987654000000
@@ -209,8 +209,8 @@ contract YFBTCMaster is Ownable {
         );
         rewardInfo.push(
             RewardInfo({
-                startBlock: startedBlock.add(2928000),
-                endBlock: startedBlock.add(3960000),
+                startBlock: startedBlock.add(2073600),
+                endBlock: startedBlock.add(3110400),
                 rewardFrom: 16590 * 10**18,
                 rewardTo: 18830 * 10**18,
                 rewardPerBlock: 2160493827000000
@@ -218,8 +218,8 @@ contract YFBTCMaster is Ownable {
         );
         rewardInfo.push(
             RewardInfo({
-                startBlock: startedBlock.add(3960000),
-                endBlock: startedBlock.add(4992000),
+                startBlock: startedBlock.add(3110400),
+                endBlock: startedBlock.add(4147200),
                 rewardFrom: 18830 * 10**18,
                 rewardTo: 19950 * 10**18,
                 rewardPerBlock: 1080246914000000
@@ -227,8 +227,8 @@ contract YFBTCMaster is Ownable {
         );
         rewardInfo.push(
             RewardInfo({
-                startBlock: startedBlock.add(4992000),
-                endBlock: startedBlock.add(6024000),
+                startBlock: startedBlock.add(4147200),
+                endBlock: startedBlock.add(5184000),
                 rewardFrom: 19950 * 10**18,
                 rewardTo: 20510 * 10**18,
                 rewardPerBlock: 540123456800000
@@ -236,8 +236,8 @@ contract YFBTCMaster is Ownable {
         );
         rewardInfo.push(
             RewardInfo({
-                startBlock: startedBlock.add(6024000),
-                endBlock: startedBlock.add(7056000),
+                startBlock: startedBlock.add(5184000),
+                endBlock: startedBlock.add(6220800),
                 rewardFrom: 20510 * 10**18,
                 rewardTo: 20790 * 10**18,
                 rewardPerBlock: 270061728400000
@@ -245,8 +245,8 @@ contract YFBTCMaster is Ownable {
         );
         rewardInfo.push(
             RewardInfo({
-                startBlock: startedBlock.add(7056000),
-                endBlock: startedBlock.add(8088000),
+                startBlock: startedBlock.add(6220800),
+                endBlock: startedBlock.add(7257600),
                 rewardFrom: 20790 * 10**18,
                 rewardTo: 20930 * 10**18,
                 rewardPerBlock: 135030864200000
@@ -254,8 +254,8 @@ contract YFBTCMaster is Ownable {
         );
         rewardInfo.push(
             RewardInfo({
-                startBlock: startedBlock.add(8088000),
-                endBlock: startedBlock.add(9120000),
+                startBlock: startedBlock.add(7257600),
+                endBlock: startedBlock.add(8294400),
                 rewardFrom: 20930 * 10**18,
                 rewardTo: 21000 * 10**18,
                 rewardPerBlock: 67515432100000
